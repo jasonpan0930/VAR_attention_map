@@ -47,9 +47,16 @@ def main():
     pn = patch_nums[si]
     num_heads = qkt.shape[0]
 
+    # Prefer out_dir/scaleX/; if out_dir already ends with scaleX, use it directly.
+    if out_dir.name == f"scale{si}":
+        scale_dir = out_dir
+    else:
+        scale_dir = out_dir / f"scale{si}"
+    scale_dir.mkdir(parents=True, exist_ok=True)
+
     if args.save_per_head:
         for h in range(num_heads):
-            out = out_dir / f"scale{si}_block{bi}_head_{h}.png"
+            out = scale_dir / f"scale{si}_block{bi}_head_{h}.png"
             save_qkt_mag_heatmap(
                 qkt,
                 out,
@@ -60,10 +67,10 @@ def main():
                 call_idx=0,
                 head=h,
             )
-            print(f"saved {out.name}")
+            print(f"saved {out}")
 
     if not args.no_grid:
-        grid_out = out_dir / f"scale{si}_block{bi}.png"
+        grid_out = scale_dir / f"scale{si}_block{bi}.png"
         save_qkt_mag_heads_grid(
             qkt,
             grid_out,
@@ -73,9 +80,9 @@ def main():
             patch_nums=patch_nums,
             call_idx=0,
         )
-        print(f"saved {grid_out.name}")
+        print(f"saved {grid_out}")
 
-    print(f"Done -> {out_dir.resolve()}")
+    print(f"Done -> {scale_dir.resolve()}")
 
 
 if __name__ == "__main__":

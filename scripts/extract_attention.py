@@ -26,7 +26,7 @@ def parse_args():
     p.add_argument("--blocks", type=str, default="0,8,15", help="Comma-separated block indices")
     p.add_argument("--stages", type=str, default="0,4,9", help="Comma-separated stage indices")
     p.add_argument("--query", type=int, default=-1, help="Query token index within current stage")
-    p.add_argument("--out_dir", type=str, default="outputs/demo")
+    p.add_argument("--out_dir", type=str, default="outputs/qkt_mag")
     p.add_argument("--cfg", type=float, default=1.0, help="Use 1.0 for clean single-branch attention")
     p.add_argument(
         "--save-per-head",
@@ -95,12 +95,14 @@ def main():
             tag = f"stage{si}_block{bi}"
             pn = stage["patch_num"]
             num_heads = qkt.shape[0]
+            scale_dir = out_dir / f"scale{si}"
+            scale_dir.mkdir(parents=True, exist_ok=True)
 
             if args.save_per_head:
                 for h in range(num_heads):
                     save_qkt_mag_heatmap(
                         qkt,
-                        out_dir / f"scale{si}_block{bi}_head_{h}.png",
+                        scale_dir / f"scale{si}_block{bi}_head_{h}.png",
                         stage_idx=si,
                         patch_num=pn,
                         block_idx=bi,
@@ -112,7 +114,7 @@ def main():
             if not args.no_grid:
                 save_qkt_mag_heads_grid(
                     qkt,
-                    out_dir / f"scale{si}_block{bi}.png",
+                    scale_dir / f"scale{si}_block{bi}.png",
                     stage_idx=si,
                     patch_num=pn,
                     block_idx=bi,
@@ -130,7 +132,7 @@ def main():
                     "Lk": rec["Lk"],
                     "num_heads": num_heads,
                 },
-                out_dir / f"{tag}.pt",
+                scale_dir / f"{tag}.pt",
             )
 
     print(f"Done. Outputs -> {out_dir.resolve()}")

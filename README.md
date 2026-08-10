@@ -48,16 +48,16 @@ python scripts/extract_attention.py --class_id 980 --out_dir outputs/volcano
 
 ## 輸出說明
 
-預設每次執行會產生：
+預設每次執行會產生（預設 `--out_dir outputs/qkt_mag`）：
 
-- `generated.png`：對應 class 的生成圖
-- `meta.json`：patch pyramid / token range 資訊
-- `scaleX_blockX.png`：該 block 的 **4×4 QKT head grid**
-- `stage*_block*.pt`：原始 tensor（含 `qkt_mag` `[H, Lq, Lk]`）
+- `qkt_mag/generated.png`：對應 class 的生成圖
+- `qkt_mag/meta.json`：patch pyramid / token range 資訊
+- `qkt_mag/scaleX/scaleX_blockY.png`：依 scale 分資料夾，每個 block 一張 **4×4 QKT head grid**
+- `qkt_mag/scaleX/stageX_blockY.pt`：原始 tensor（含 `qkt_mag` `[H, Lq, Lk]`，預設 gitignore）
 
 若加 `--save-per-head`，另存：
 
-- `scaleX_blockX_head_H.png`：單一 head 的 QKT heatmap
+- `qkt_mag/scaleX/scaleX_blockY_head_H.png`：單一 head 的 QKT heatmap
 
 ## VAR token 排列
 

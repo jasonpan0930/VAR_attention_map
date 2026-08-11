@@ -15,7 +15,9 @@ attention_research/
 │   └── visualize.py       # heatmap / head grid / pyramid map
 ├── scripts/
 │   └── extract_attention.py
-├── outputs/               # 輸出 attention 圖和 .pt
+├── outputs/
+│   ├── grids/             # 只放 scale*_block*.{png,pt}
+│   └── extras/            # 單頭圖、空間影片、生成圖、meta
 └── notebooks/             # 可自行放 exploratory notebook
 ```
 
@@ -32,7 +34,9 @@ VAR 本體與權重沿用 `../VAR/checkpoints/`（需已下載 `var_d16.pth` 和
 
 ```bash
 cd /home/jason/courses/2026_spring/digital_research/VAR/attention_research
-python scripts/extract_attention.py --class_id 980 --out_dir outputs/volcano
+python scripts/extract_attention.py --class_id 980
+# 4×4 + .pt → outputs/grids/class980/
+# 生成圖 / meta / 單頭圖 → outputs/extras/
 ```
 
 常用參數：
@@ -48,16 +52,18 @@ python scripts/extract_attention.py --class_id 980 --out_dir outputs/volcano
 
 ## 輸出說明
 
-預設每次執行會產生（預設 `--out_dir outputs/qkt_mag`）：
+預設每次執行會產生（`--out_dir` 預設 `outputs/grids/class{class_id}`）：
 
-- `qkt_mag/generated.png`：對應 class 的生成圖
-- `qkt_mag/meta.json`：patch pyramid / token range 資訊
-- `qkt_mag/scaleX/scaleX_blockY.png`：依 scale 分資料夾，每個 block 一張 **4×4 QKT head grid**
-- `qkt_mag/scaleX/stageX_blockY.pt`：原始 tensor（含 `qkt_mag` `[H, Lq, Lk]`，預設 gitignore）
+- `grids/class{id}/scaleX/scaleX_blockY.png`：每個 block 一張 **4×4 QKT head grid**
+- `grids/class{id}/scaleX/scaleX_blockY.pt`：原始 tensor（`qkt_mag` `[H, Lq, Lk]`，gitignore）
+- `extras/generated/class{id}.png`：生成圖
+- `extras/meta/class{id}.json`：run meta
 
-若加 `--save-per-head`，另存：
+若加 `--save-per-head`：
 
-- `qkt_mag/scaleX/scaleX_blockY_head_H.png`：單一 head 的 QKT heatmap
+- `extras/per_head/class{id}/scaleX/scaleX_blockY_head_H.png`
+
+細節見 `outputs/README.md`。
 
 ## VAR token 排列
 
@@ -75,6 +81,10 @@ Inference 是 **next-scale prediction**：
 - 為了拿到 attention weight，會 **關閉 flash/xformers**，走 explicit softmax 路徑
 - 使用 monkey-patch，不修改官方 `VAR/models/` 原始碼
 - 研究時建議 `--cfg 1.0`，避免 CFG 複製 batch 讓 attention 解讀變複雜
+
+## 研究記錄
+
+- [2026-08-11](notes/2026-08-11_research_log.md)：discrete residual 與 `f_hat`；scale8 vs scale9 key 0–423；scale9 block2 head8/12；head12 空間粗十字（臂長 16、臂寬 5）
 
 ## 下一步你可以做
 

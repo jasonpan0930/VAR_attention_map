@@ -26,7 +26,12 @@ def parse_args():
     p.add_argument("--blocks", type=str, default="0,8,15", help="Comma-separated block indices")
     p.add_argument("--stages", type=str, default="0,4,9", help="Comma-separated stage indices")
     p.add_argument("--query", type=int, default=-1, help="Query token index within current stage")
-    p.add_argument("--out_dir", type=str, default="outputs/qkt_mag")
+    p.add_argument(
+        "--out_dir",
+        type=str,
+        default=None,
+        help="4x4 grids + .pt (default: outputs/grids/class{class_id})",
+    )
     p.add_argument("--cfg", type=float, default=1.0, help="Use 1.0 for clean single-branch attention")
     p.add_argument(
         "--save-per-head",
@@ -43,8 +48,14 @@ def parse_args():
 
 def main():
     args = parse_args()
-    out_dir = ROOT / args.out_dir
+    out_dir = ROOT / (args.out_dir or f"outputs/grids/class{args.class_id}")
+    extras = ROOT / "outputs" / "extras"
+    gen_dir = extras / "generated"
+    meta_dir = extras / "meta"
+    head_root = extras / "per_head" / f"class{args.class_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
+    gen_dir.mkdir(parents=True, exist_ok=True)
+    meta_dir.mkdir(parents=True, exist_ok=True)
 
     target_blocks = [int(x) for x in args.blocks.split(",") if x.strip()]
     target_stages = [int(x) for x in args.stages.split(",") if x.strip()]
@@ -67,7 +78,7 @@ def main():
     # Save generated image for reference
     import torchvision
 
-    torchvision.utils.save_image(image, out_dir / "generated.png")
+    torchvision.utils.save_image(image, gen_dir / f"class{args.class_id}.png")
 
     meta = {
         "class_id": args.class_id,
@@ -80,7 +91,7 @@ def main():
         "save_per_head": args.save_per_head,
         "save_grid": not args.no_grid,
     }
-    (out_dir / "meta.json").write_text(json.dumps(meta, indent=2))
+    (meta_dir / f"class{args.class_id}.json").write_text(json.dumps(meta, indent=2))
 
     for stage in stage_outputs:
         si = stage["stage_idx"]
@@ -92,17 +103,18 @@ def main():
                 continue
             attn = rec["attn"]  # H, Lq, Lk
             qkt = rec["qkt_mag"]
-            tag = f"stage{si}_block{bi}"
             pn = stage["patch_num"]
             num_heads = qkt.shape[0]
             scale_dir = out_dir / f"scale{si}"
             scale_dir.mkdir(parents=True, exist_ok=True)
 
             if args.save_per_head:
+                head_dir = head_root / f"scale{si}"
+                head_dir.mkdir(parents=True, exist_ok=True)
                 for h in range(num_heads):
                     save_qkt_mag_heatmap(
                         qkt,
-                        scale_dir / f"scale{si}_block{bi}_head_{h}.png",
+                        head_dir / f"scale{si}_block{bi}_head_{h}.png",
                         stage_idx=si,
                         patch_num=pn,
                         block_idx=bi,
@@ -132,10 +144,11 @@ def main():
                     "Lk": rec["Lk"],
                     "num_heads": num_heads,
                 },
-                scale_dir / f"{tag}.pt",
+                scale_dir / f"scale{si}_block{bi}.pt",
             )
 
-    print(f"Done. Outputs -> {out_dir.resolve()}")
+    print(f"Done. Grids -> {out_dir.resolve()}")
+    print(f"       extras -> {extras.resolve()}")
 
 
 if __name__ == "__main__":
